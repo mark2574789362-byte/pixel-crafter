@@ -62,11 +62,26 @@ npm run build
 
 ## Dependencies
 
+### Core Dependencies
 - [React](https://react.dev/) - UI framework
 - [Tailwind CSS](https://tailwindcss.com/) - Styling
 - [Framer Motion](https://www.framer.com/motion/) - Animations
 - [Lucide](https://lucide.dev/) - Icons
 - [Replicate](https://replicate.com/) - AI image generation API
+
+### UI Utilities
+- [clsx](https://github.com/lukeed/clsx) - Conditional className utility
+- [tailwind-merge](https://github.com/RickCochrane/tailwind-merge) - Tailwind class merging
+- [class-variance-authority](https://github.com/joeatt/cva) - Component variant styles
+
+### Build Tools
+- [@tailwindcss/vite](https://tailwindcss.com/) - Tailwind Vite plugin
+- [@types/node](https://www.npmjs.com/package/@types/node) - TypeScript type definitions
+
+### Component Library
+- shadcn/ui (Button, Card components) - Implementation follows [shadcn/ui patterns](https://ui.shadcn.com/). Original design and implementation is custom for this project.
+
+> **Note**: Button and Card components are custom implementations following shadcn/ui design guidelines. They are not installed as an npm package — source code is in `src/components/ui/`.
 
 ## License
 
