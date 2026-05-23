@@ -67,7 +67,7 @@ npm run build
 - [Tailwind CSS](https://tailwindcss.com/) - Styling
 - [Framer Motion](https://www.framer.com/motion/) - Animations
 - [Lucide](https://lucide.dev/) - Icons
-- [Replicate](https://replicate.com/) - AI image generation API
+- [Replicate](https://replicate.com/) - AI image generation API (SDXL model)
 
 ### UI Utilities
 - [clsx](https://github.com/lukeed/clsx) - Conditional className utility

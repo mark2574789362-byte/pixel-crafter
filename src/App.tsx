@@ -1,35 +1,16 @@
 import { useState } from 'react'
-import { Sparkles, Download, History, Palette } from 'lucide-react'
+import { Sparkles, Download, History, Palette, AlertCircle, Key } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { type PixelStyle, type AssetType } from '@/types'
+import { generateAsset } from '@/lib/api'
 
-const STYLE_PRESETS: Record<PixelStyle, { name: string; prompt: string; negativePrompt: string }> = {
-  'pixel-fantasy': {
-    name: 'Pixel Fantasy',
-    prompt: 'pixel art, fantasy RPG, vibrant colors, crisp pixels, 16-bit era style',
-    negativePrompt: 'photorealistic, blurry, low quality, modern, 3D render',
-  },
-  'dark-dungeon': {
-    name: 'Dark Dungeon',
-    prompt: 'pixel art, dark dungeon crawler, moody lighting, stone textures, torchlight glow',
-    negativePrompt: 'bright, sunny, cartoon, low quality, modern UI elements',
-  },
-  'neon-cyberpunk': {
-    name: 'Neon Cyberpunk',
-    prompt: 'pixel art, neon cyberpunk, glowing lights, dark city, rain reflections, retrofuturistic',
-    negativePrompt: 'natural lighting, medieval, fantasy, low quality, blurry',
-  },
-  'anime-rpg': {
-    name: 'Anime RPG',
-    prompt: 'pixel art, anime RPG style, expressive characters, colorful, JRPG aesthetic',
-    negativePrompt: 'western cartoon, realistic, dark souls, low quality, blurry pixels',
-  },
-  'retro-8bit': {
-    name: 'Retro 8-bit',
-    prompt: '8-bit pixel art, NES style, limited color palette, authentic retro gaming',
-    negativePrompt: '16-bit, smooth gradients, high resolution, modern, 3D',
-  },
+const STYLE_PRESETS: Record<PixelStyle, { name: string }> = {
+  'pixel-fantasy': { name: 'Pixel Fantasy' },
+  'dark-dungeon': { name: 'Dark Dungeon' },
+  'neon-cyberpunk': { name: 'Neon Cyberpunk' },
+  'anime-rpg': { name: 'Anime RPG' },
+  'retro-8bit': { name: 'Retro 8-bit' },
 }
 
 const ASSET_TYPES: AssetType[] = ['character', 'enemy', 'tileset', 'ui', 'props', 'npc']
@@ -52,24 +33,55 @@ const ASSET_TYPE_DESCRIPTIONS: Record<AssetType, string> = {
   npc: 'Merchants, villagers, quest givers',
 }
 
+const STORAGE_KEY = 'pixel-crafter-api-token'
+
 function App() {
   const [selectedStyle, setSelectedStyle] = useState<PixelStyle>('pixel-fantasy')
   const [selectedAssetType, setSelectedAssetType] = useState<AssetType>('character')
   const [prompt, setPrompt] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [showTokenInput, setShowTokenInput] = useState(false)
+  const [apiToken, setApiToken] = useState(() => localStorage.getItem(STORAGE_KEY) || '')
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return
+    if (!apiToken.trim()) {
+      setError('Please enter your Replicate API token first')
+      setShowTokenInput(true)
+      return
+    }
+
     setIsGenerating(true)
+    setError(null)
     setGeneratedImage(null)
 
-    // Simulate generation - Replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    try {
+      const imageUrl = await generateAsset(
+        {
+          style: selectedStyle,
+          assetType: selectedAssetType,
+          prompt,
+          width: 1024,
+          height: 1024,
+          guidanceScale: 7.5,
+          steps: 30,
+        },
+        apiToken
+      )
+      setGeneratedImage(imageUrl)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Generation failed')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
-    // Demo placeholder
-    setGeneratedImage(`https://picsum.photos/512/512?random=${Date.now()}`)
-    setIsGenerating(false)
+  const handleTokenSave = (token: string) => {
+    setApiToken(token)
+    localStorage.setItem(STORAGE_KEY, token)
+    setShowTokenInput(false)
   }
 
   return (
@@ -111,6 +123,34 @@ function App() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* API Token */}
+                {!apiToken && !showTokenInput && (
+                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="mt-0.5 h-5 w-5 text-destructive" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-destructive">API Token Required</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Enter your Replicate API token to start generating assets.
+                        </p>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="mt-2 h-auto p-0 text-primary"
+                          onClick={() => setShowTokenInput(true)}
+                        >
+                          <Key className="mr-1 h-3 w-3" />
+                          Configure Token
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {showTokenInput && (
+                  <TokenInput onSave={handleTokenSave} onCancel={() => setShowTokenInput(false)} />
+                )}
+
                 {/* Style Selection */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium">Style</label>
@@ -164,6 +204,13 @@ function App() {
                     className="min-h-[120px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
+
+                {/* Error Display */}
+                {error && (
+                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3">
+                    <p className="text-sm text-destructive">{error}</p>
+                  </div>
+                )}
 
                 {/* Generate Button */}
                 <Button
@@ -241,11 +288,11 @@ function App() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Size:</span>
-                      <span className="ml-2 font-medium">512×512</span>
+                      <span className="ml-2 font-medium">1024×1024</span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Seed:</span>
-                      <span className="ml-2 font-medium">Random</span>
+                      <span className="text-muted-foreground">Model:</span>
+                      <span className="ml-2 font-medium">SDXL</span>
                     </div>
                   </div>
                 </CardContent>
@@ -255,6 +302,56 @@ function App() {
         </div>
       </main>
     </div>
+  )
+}
+
+interface TokenInputProps {
+  onSave: (token: string) => void
+  onCancel: () => void
+}
+
+function TokenInput({ onSave, onCancel }: TokenInputProps) {
+  const [token, setToken] = useState('')
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (token.trim()) {
+      onSave(token.trim())
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border border-border p-4">
+      <div>
+        <label className="text-sm font-medium">Replicate API Token</label>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Get your token from{' '}
+          <a
+            href="https://replicate.com/account/api-tokens"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline"
+          >
+            replicate.com/account/api-tokens
+          </a>
+        </p>
+      </div>
+      <input
+        type="password"
+        value={token}
+        onChange={e => setToken(e.target.value)}
+        placeholder="r8_..."
+        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+      />
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={!token.trim()}>
+          Save Token
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </form>
   )
 }
 
