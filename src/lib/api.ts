@@ -52,14 +52,12 @@ export async function generateAsset(
 
   const replicate = new Replicate({ auth: apiToken })
 
-  // Build structured prompt from style + asset type + user input
   const styleConfig = STYLE_PROMPTS[style]
   const assetContext = ASSET_TYPE_PROMPTS[assetType] || ''
-  
+
   const fullPrompt = `${styleConfig.prompt}, ${assetContext}, ${prompt}`.trim()
   const negativePrompt = `${styleConfig.negativePrompt}, watermark, signature, text overlay`
 
-  // Use Stability AI SDXL model on Replicate
   const model = 'stability-ai/sdxl:da77bc8f9041c6709f4c94be22e1b47229c4c2f5eb04604c47b3cd9e4b4ad6e'
 
   const input: Record<string, unknown> = {
@@ -75,14 +73,16 @@ export async function generateAsset(
     input.seed = seed
   }
 
-  const output = await replicate.run(model, { input }) as string | string[]
-
-  // SDXL returns an array of URLs, take the first one
-  if (Array.isArray(output)) {
-    return output[0]
+  try {
+    const output = await replicate.run(model, { input }) as string | string[]
+    if (Array.isArray(output)) {
+      return output[0]
+    }
+    return output
+  } catch (err) {
+    console.error('Replicate error:', err)
+    throw new Error(`Generation failed: ${err instanceof Error ? err.message : String(err)}`)
   }
-
-  return output
 }
 
 export async function generateSpriteSheet(
