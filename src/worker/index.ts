@@ -1,7 +1,7 @@
 const REPLICATE_API_BASE = 'https://api.replicate.com'
 
 export interface Env {
-  REPLICATE_API_TOKEN?: string
+  REPLICATE_KEY?: string
 }
 
 interface ReplicatePrediction {
@@ -60,9 +60,9 @@ export default {
       return new Response('Only POST allowed', { status: 405 })
     }
 
-    const token = env.REPLICATE_API_TOKEN
+    const token = env.REPLICATE_KEY || ''
     if (!token) {
-      return new Response(JSON.stringify({ error: 'REPLICATE_API_TOKEN not configured' }), {
+      return new Response(JSON.stringify({ error: 'REPLICATE_KEY not configured' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       })
