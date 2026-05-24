@@ -166,7 +166,7 @@ export default {
       })
     }
 
-    const { style, assetType, characterName, frameType, width = 1024, height = 1024, guidance_scale = 7.5, num_inference_steps = 30, seed } = body
+    const { style, assetType, characterName, frameType: _frameType, width = 1024, height = 1024, guidance_scale = 7.5, num_inference_steps = 30, seed } = body
 
     if (!style || !assetType || !characterName) {
       return new Response(JSON.stringify({ error: 'style, assetType, and characterName are required' }), {

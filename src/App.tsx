@@ -1,8 +1,12 @@
 import { useState } from 'react'
-import { Sparkles, Download, History, Palette, AlertCircle, Globe } from 'lucide-react'
+import { Sparkles, Download, History, Palette, AlertCircle, Globe, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { type PixelStyle, type AssetType } from '@/types'
+import { type PixelStyle } from '@/types'
+import { createSpriteSheet, downloadSpriteSheet } from '@/lib/spriteSheetExporter'
+
+const WORKER_URL_KEY = 'pixel-crafter-worker-url'
+const WORKER_URL = 'https://pixel-crafter-worker.mark2574789362.workers.dev'
 
 const STYLE_PRESETS: Record<PixelStyle, { name: string }> = {
   'pixel-fantasy': { name: 'Pixel Fantasy' },
@@ -12,57 +16,30 @@ const STYLE_PRESETS: Record<PixelStyle, { name: string }> = {
   'retro-8bit': { name: 'Retro 8-bit' },
 }
 
-const ASSET_TYPES: AssetType[] = ['character', 'enemy', 'tileset', 'ui', 'props', 'npc']
-
-const ASSET_TYPE_LABELS: Record<AssetType, string> = {
-  character: 'Character',
-  enemy: 'Enemy',
-  tileset: 'Tileset',
-  ui: 'UI Element',
-  props: 'Props',
-  npc: 'NPC',
+const FRAME_TYPES = ['idle', 'attack', 'death'] as const
+const FRAME_LABELS: Record<string, string> = {
+  idle: 'Idle',
+  attack: 'Attack',
+  death: 'Death',
 }
-
-const ASSET_TYPE_DESCRIPTIONS: Record<AssetType, string> = {
-  character: 'Player characters, heroes, adventurers',
-  enemy: 'Monsters, bosses, hostile creatures',
-  tileset: 'Terrain, floors, walls, architecture',
-  ui: 'Buttons, panels, health bars, icons',
-  props: 'Items, weapons, potions, treasure',
-  npc: 'Merchants, villagers, quest givers',
+const FRAME_DESCRIPTIONS: Record<string, string> = {
+  idle: 'Breathing animation, front view',
+  attack: 'Striking pose, combat ready',
+  death: 'Defeat animation, fallen',
 }
-
-const STYLE_CONTEXT: Record<PixelStyle, string> = {
-  'pixel-fantasy': 'pixel art, fantasy RPG, vibrant colors, crisp pixels, 16-bit era style',
-  'dark-dungeon': 'pixel art, dark dungeon crawler, moody lighting, stone textures, torchlight glow',
-  'neon-cyberpunk': 'pixel art, neon cyberpunk, glowing lights, dark city, rain reflections, retrofuturistic',
-  'anime-rpg': 'pixel art, anime RPG style, expressive characters, colorful, JRPG aesthetic',
-  'retro-8bit': '8-bit pixel art, NES style, limited color palette, authentic retro gaming',
-}
-
-const ASSET_CONTEXT: Record<AssetType, string> = {
-  character: 'player character, hero, adventurer, standing pose',
-  enemy: 'monster creature, hostile enemy, boss, combat ready',
-  tileset: 'game tile, dungeon floor, stone wall, terrain element',
-  ui: 'game UI element, button, panel, HUD component',
-  props: 'game item, weapon, potion, treasure chest, collectible',
-  npc: 'NPC, villager, merchant, quest giver, friendly character',
-}
-
-const WORKER_URL_KEY = 'pixel-crafter-worker-url'
 
 function App() {
   const [selectedStyle, setSelectedStyle] = useState<PixelStyle>('pixel-fantasy')
-  const [selectedAssetType, setSelectedAssetType] = useState<AssetType>('character')
-  const [prompt, setPrompt] = useState('')
+  const [characterName, setCharacterName] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null)
+  const [currentFrame, setCurrentFrame] = useState<string>('')
+  const [generatedFrames, setGeneratedFrames] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [showWorkerInput, setShowWorkerInput] = useState(false)
-  const [workerUrl, setWorkerUrl] = useState(() => localStorage.getItem(WORKER_URL_KEY) || '')
+  const [workerUrl, setWorkerUrl] = useState(() => localStorage.getItem(WORKER_URL_KEY) || WORKER_URL)
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) return
+    if (!characterName.trim()) return
     if (!workerUrl.trim()) {
       setError('Please configure the Worker URL first')
       setShowWorkerInput(true)
@@ -71,35 +48,41 @@ function App() {
 
     setIsGenerating(true)
     setError(null)
-    setGeneratedImage(null)
+    setGeneratedFrames({})
 
     try {
-      const fullPrompt = `${STYLE_CONTEXT[selectedStyle]}, ${ASSET_CONTEXT[selectedAssetType]}, ${prompt}`
+      const frames: Record<string, string> = {}
 
-      const response = await fetch(workerUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: fullPrompt,
-          negative_prompt: 'photorealistic, blurry, low quality, modern, 3D render, watermark, signature, text overlay',
-          width: 1024,
-          height: 1024,
-          guidance_scale: 7.5,
-          num_inference_steps: 30,
-        }),
-      })
+      for (const frameType of FRAME_TYPES) {
+        setCurrentFrame(frameType)
 
-      const data = await response.json()
+        const response = await fetch(workerUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            style: selectedStyle,
+            assetType: 'enemy',
+            characterName: characterName.trim(),
+            frameType,
+          }),
+        })
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Generation failed')
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || `Generation failed for ${frameType}`)
+        }
+
+        frames[frameType] = data.imageUrl
+        setGeneratedFrames({ ...frames })
       }
 
-      setGeneratedImage(data.imageUrl)
+      setCurrentFrame('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Generation failed')
     } finally {
       setIsGenerating(false)
+      setCurrentFrame('')
     }
   }
 
@@ -108,6 +91,20 @@ function App() {
     localStorage.setItem(WORKER_URL_KEY, url)
     setShowWorkerInput(false)
   }
+
+  const handleExportSpriteSheet = async () => {
+    const imageUrls = FRAME_TYPES.map(ft => generatedFrames[ft]).filter(Boolean)
+    if (imageUrls.length === 0) return
+
+    try {
+      const exportData = await createSpriteSheet(imageUrls, characterName)
+      downloadSpriteSheet(exportData)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Export failed')
+    }
+  }
+
+  const hasAllFrames = FRAME_TYPES.every(ft => generatedFrames[ft])
 
   return (
     <div className="min-h-screen bg-background">
@@ -126,9 +123,9 @@ function App() {
               <History className="mr-2 h-4 w-4" />
               History
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={handleExportSpriteSheet} disabled={!hasAllFrames}>
               <Download className="mr-2 h-4 w-4" />
-              Export
+              Export Sprite Sheet
             </Button>
           </nav>
         </div>
@@ -139,9 +136,9 @@ function App() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Asset Generator</CardTitle>
+                <CardTitle>Enemy Sprite Generator</CardTitle>
                 <CardDescription>
-                  Generate pixel art assets for your 2D game in seconds
+                  Generate animated enemy sprites with idle, attack, and death frames
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -192,35 +189,58 @@ function App() {
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-sm font-medium">Asset Type</label>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {ASSET_TYPES.map(type => (
-                      <button
-                        key={type}
-                        onClick={() => setSelectedAssetType(type)}
-                        className={`rounded-lg border p-3 text-left text-sm transition-colors ${
-                          selectedAssetType === type
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border hover:border-primary/50 hover:bg-accent/50'
-                        }`}
-                      >
-                        <div className="font-medium">{ASSET_TYPE_LABELS[type]}</div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {ASSET_TYPE_DESCRIPTIONS[type]}
-                        </div>
-                      </button>
-                    ))}
+                  <label className="text-sm font-medium">Enemy Type</label>
+                  <div className="rounded-lg border border-border bg-muted/30 p-3">
+                    <div className="font-medium">Enemy</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Monsters, bosses, hostile creatures
+                    </div>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-sm font-medium">Description</label>
-                  <textarea
-                    value={prompt}
-                    onChange={e => setPrompt(e.target.value)}
-                    placeholder={`Describe the ${ASSET_TYPE_LABELS[selectedAssetType].toLowerCase()} you want to generate...`}
-                    className="min-h-[120px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  <label className="text-sm font-medium">Character Name</label>
+                  <input
+                    type="text"
+                    value={characterName}
+                    onChange={e => setCharacterName(e.target.value)}
+                    placeholder="e.g. Skeleton Warrior, Dark Slime, Flame Demon"
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Animation Frames</label>
+                  <div className="space-y-2">
+                    {FRAME_TYPES.map(ft => (
+                      <div
+                        key={ft}
+                        className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${
+                          currentFrame === ft
+                            ? 'border-primary bg-primary/10'
+                            : generatedFrames[ft]
+                            ? 'border-green-500/50 bg-green-500/10'
+                            : 'border-border'
+                        }`}
+                      >
+                        <div>
+                          <div className="font-medium">{FRAME_LABELS[ft]}</div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {FRAME_DESCRIPTIONS[ft]}
+                          </div>
+                        </div>
+                        <div className="text-sm">
+                          {currentFrame === ft ? (
+                            <span className="animate-spin">⟳</span>
+                          ) : generatedFrames[ft] ? (
+                            <span className="text-green-500">✓</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {error && (
@@ -233,17 +253,17 @@ function App() {
                   className="w-full"
                   size="lg"
                   onClick={handleGenerate}
-                  disabled={isGenerating || !prompt.trim() || !workerUrl.trim()}
+                  disabled={isGenerating || !characterName.trim() || !workerUrl.trim()}
                 >
                   {isGenerating ? (
                     <>
                       <span className="mr-2 animate-spin">⟳</span>
-                      Generating...
+                      Generating {currentFrame ? `${FRAME_LABELS[currentFrame]}` : ''} frame...
                     </>
                   ) : (
                     <>
                       <Sparkles className="mr-2 h-4 w-4" />
-                      Generate Asset
+                      Generate All Frames
                     </>
                   )}
                 </Button>
@@ -255,20 +275,37 @@ function App() {
             <Card className="min-h-[400px]">
               <CardHeader>
                 <CardTitle>Preview</CardTitle>
-                <CardDescription>Generated asset will appear here</CardDescription>
+                <CardDescription>Idle | Attack | Death</CardDescription>
               </CardHeader>
-              <CardContent className="flex items-center justify-center">
-                {generatedImage ? (
-                  <div className="relative w-full">
-                    <img
-                      src={generatedImage}
-                      alt="Generated asset"
-                      className="w-full rounded-lg border border-border"
-                    />
-                    <div className="mt-4 flex gap-2">
+              <CardContent>
+                {hasAllFrames ? (
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      {FRAME_TYPES.map(ft => (
+                        <div key={ft} className="flex-1 text-center">
+                          <div className="text-xs font-medium text-muted-foreground mb-2">
+                            {FRAME_LABELS[ft]}
+                          </div>
+                          <img
+                            src={generatedFrames[ft]}
+                            alt={`${ft} frame`}
+                            className="w-full rounded-lg border border-border"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleExportSpriteSheet}
+                        className="flex-1"
+                        size="sm"
+                      >
+                        <Layers className="mr-2 h-4 w-4" />
+                        Export Sprite Sheet
+                      </Button>
                       <a
-                        href={generatedImage}
-                        download="pixel-crafter-asset.png"
+                        href={generatedFrames.idle}
+                        download={`${characterName.toLowerCase().replace(/\s+/g, '-')}-idle.png`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3 text-xs"
@@ -278,16 +315,25 @@ function App() {
                       </a>
                     </div>
                   </div>
+                ) : isGenerating ? (
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <Sparkles className="mb-4 h-12 w-12 opacity-50 animate-pulse" />
+                    <p className="text-sm">
+                      {currentFrame
+                        ? `Generating ${FRAME_LABELS[currentFrame]} frame...`
+                        : 'Preparing...'}
+                    </p>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center text-muted-foreground">
                     <Sparkles className="mb-4 h-12 w-12 opacity-50" />
-                    <p className="text-sm">Configure parameters and generate</p>
+                    <p className="text-sm">Enter a character name and generate</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {generatedImage && (
+            {hasAllFrames && (
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">Generation Parameters</CardTitle>
@@ -300,15 +346,15 @@ function App() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Type:</span>
-                      <span className="ml-2 font-medium">{ASSET_TYPE_LABELS[selectedAssetType]}</span>
+                      <span className="ml-2 font-medium">Enemy</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Frames:</span>
+                      <span className="ml-2 font-medium">3 (Idle/Attack/Death)</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Size:</span>
-                      <span className="ml-2 font-medium">1024×1024</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Model:</span>
-                      <span className="ml-2 font-medium">SDXL</span>
+                      <span className="ml-2 font-medium">128×128</span>
                     </div>
                   </div>
                 </CardContent>
