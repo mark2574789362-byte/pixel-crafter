@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { Sparkles, Download, History, Palette, AlertCircle, Key } from 'lucide-react'
+import { Sparkles, Download, History, Palette, AlertCircle, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { type PixelStyle, type AssetType } from '@/types'
-import { generateAsset } from '@/lib/api'
 
 const STYLE_PRESETS: Record<PixelStyle, { name: string }> = {
   'pixel-fantasy': { name: 'Pixel Fantasy' },
@@ -33,7 +32,24 @@ const ASSET_TYPE_DESCRIPTIONS: Record<AssetType, string> = {
   npc: 'Merchants, villagers, quest givers',
 }
 
-const STORAGE_KEY = 'pixel-crafter-api-token'
+const STYLE_CONTEXT: Record<PixelStyle, string> = {
+  'pixel-fantasy': 'pixel art, fantasy RPG, vibrant colors, crisp pixels, 16-bit era style',
+  'dark-dungeon': 'pixel art, dark dungeon crawler, moody lighting, stone textures, torchlight glow',
+  'neon-cyberpunk': 'pixel art, neon cyberpunk, glowing lights, dark city, rain reflections, retrofuturistic',
+  'anime-rpg': 'pixel art, anime RPG style, expressive characters, colorful, JRPG aesthetic',
+  'retro-8bit': '8-bit pixel art, NES style, limited color palette, authentic retro gaming',
+}
+
+const ASSET_CONTEXT: Record<AssetType, string> = {
+  character: 'player character, hero, adventurer, standing pose',
+  enemy: 'monster creature, hostile enemy, boss, combat ready',
+  tileset: 'game tile, dungeon floor, stone wall, terrain element',
+  ui: 'game UI element, button, panel, HUD component',
+  props: 'game item, weapon, potion, treasure chest, collectible',
+  npc: 'NPC, villager, merchant, quest giver, friendly character',
+}
+
+const WORKER_URL_KEY = 'pixel-crafter-worker-url'
 
 function App() {
   const [selectedStyle, setSelectedStyle] = useState<PixelStyle>('pixel-fantasy')
@@ -42,14 +58,14 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showTokenInput, setShowTokenInput] = useState(false)
-  const [apiToken, setApiToken] = useState(() => localStorage.getItem(STORAGE_KEY) || '')
+  const [showWorkerInput, setShowWorkerInput] = useState(false)
+  const [workerUrl, setWorkerUrl] = useState(() => localStorage.getItem(WORKER_URL_KEY) || '')
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return
-    if (!apiToken.trim()) {
-      setError('Please enter your Replicate API token first')
-      setShowTokenInput(true)
+    if (!workerUrl.trim()) {
+      setError('Please configure the Worker URL first')
+      setShowWorkerInput(true)
       return
     }
 
@@ -58,19 +74,28 @@ function App() {
     setGeneratedImage(null)
 
     try {
-      const imageUrl = await generateAsset(
-        {
-          style: selectedStyle,
-          assetType: selectedAssetType,
-          prompt,
+      const fullPrompt = `${STYLE_CONTEXT[selectedStyle]}, ${ASSET_CONTEXT[selectedAssetType]}, ${prompt}`
+
+      const response = await fetch(workerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: fullPrompt,
+          negative_prompt: 'photorealistic, blurry, low quality, modern, 3D render, watermark, signature, text overlay',
           width: 1024,
           height: 1024,
-          guidanceScale: 7.5,
-          steps: 30,
-        },
-        apiToken
-      )
-      setGeneratedImage(imageUrl)
+          guidance_scale: 7.5,
+          num_inference_steps: 30,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Generation failed')
+      }
+
+      setGeneratedImage(data.imageUrl)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Generation failed')
     } finally {
@@ -78,15 +103,14 @@ function App() {
     }
   }
 
-  const handleTokenSave = (token: string) => {
-    setApiToken(token)
-    localStorage.setItem(STORAGE_KEY, token)
-    setShowTokenInput(false)
+  const handleWorkerUrlSave = (url: string) => {
+    setWorkerUrl(url)
+    localStorage.setItem(WORKER_URL_KEY, url)
+    setShowWorkerInput(false)
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
         <div className="container mx-auto flex h-16 items-center px-4">
           <div className="flex items-center gap-2">
@@ -94,11 +118,11 @@ function App() {
             <span className="text-lg font-semibold">PixelCrafter</span>
           </div>
           <nav className="ml-auto flex items-center gap-4">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={() => {}}>
               <Palette className="mr-2 h-4 w-4" />
               Style Library
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={() => {}}>
               <History className="mr-2 h-4 w-4" />
               History
             </Button>
@@ -110,10 +134,8 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="grid gap-8 lg:grid-cols-2">
-          {/* Left: Input Panel */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -123,35 +145,33 @@ function App() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* API Token */}
-                {!apiToken && !showTokenInput && (
+                {!workerUrl && !showWorkerInput && (
                   <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="mt-0.5 h-5 w-5 text-destructive" />
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-destructive">API Token Required</p>
+                        <p className="text-sm font-medium text-destructive">Worker URL Required</p>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          Enter your Replicate API token to start generating assets.
+                          Configure the Cloudflare Worker endpoint to enable generation.
                         </p>
                         <Button
                           variant="link"
                           size="sm"
                           className="mt-2 h-auto p-0 text-primary"
-                          onClick={() => setShowTokenInput(true)}
+                          onClick={() => setShowWorkerInput(true)}
                         >
-                          <Key className="mr-1 h-3 w-3" />
-                          Configure Token
+                          <Globe className="mr-1 h-3 w-3" />
+                          Configure Worker
                         </Button>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {showTokenInput && (
-                  <TokenInput onSave={handleTokenSave} onCancel={() => setShowTokenInput(false)} />
+                {showWorkerInput && (
+                  <WorkerUrlInput onSave={handleWorkerUrlSave} onCancel={() => setShowWorkerInput(false)} />
                 )}
 
-                {/* Style Selection */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium">Style</label>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -171,7 +191,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* Asset Type Selection */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium">Asset Type</label>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -194,7 +213,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* Prompt Input */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium">Description</label>
                   <textarea
@@ -205,19 +223,17 @@ function App() {
                   />
                 </div>
 
-                {/* Error Display */}
                 {error && (
                   <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3">
                     <p className="text-sm text-destructive">{error}</p>
                   </div>
                 )}
 
-                {/* Generate Button */}
                 <Button
                   className="w-full"
                   size="lg"
                   onClick={handleGenerate}
-                  disabled={isGenerating || !prompt.trim()}
+                  disabled={isGenerating || !prompt.trim() || !workerUrl.trim()}
                 >
                   {isGenerating ? (
                     <>
@@ -235,7 +251,6 @@ function App() {
             </Card>
           </div>
 
-          {/* Right: Preview Panel */}
           <div className="space-y-6">
             <Card className="min-h-[400px]">
               <CardHeader>
@@ -251,14 +266,16 @@ function App() {
                       className="w-full rounded-lg border border-border"
                     />
                     <div className="mt-4 flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <a
+                        href={generatedImage}
+                        download="pixel-crafter-asset.png"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3 text-xs"
+                      >
                         <Download className="mr-2 h-4 w-4" />
                         Download PNG
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Download className="mr-2 h-4 w-4" />
-                        Export Sprite Sheet
-                      </Button>
+                      </a>
                     </div>
                   </div>
                 ) : (
@@ -270,7 +287,6 @@ function App() {
               </CardContent>
             </Card>
 
-            {/* Parameter Summary */}
             {generatedImage && (
               <Card>
                 <CardHeader className="pb-2">
@@ -305,47 +321,40 @@ function App() {
   )
 }
 
-interface TokenInputProps {
-  onSave: (token: string) => void
+interface WorkerUrlInputProps {
+  onSave: (url: string) => void
   onCancel: () => void
 }
 
-function TokenInput({ onSave, onCancel }: TokenInputProps) {
-  const [token, setToken] = useState('')
+function WorkerUrlInput({ onSave, onCancel }: WorkerUrlInputProps) {
+  const [url, setUrl] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (token.trim()) {
-      onSave(token.trim())
+    const trimmed = url.trim()
+    if (trimmed) {
+      onSave(trimmed)
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border border-border p-4">
       <div>
-        <label className="text-sm font-medium">Replicate API Token</label>
+        <label className="text-sm font-medium">Cloudflare Worker URL</label>
         <p className="mt-1 text-xs text-muted-foreground">
-          Get your token from{' '}
-          <a
-            href="https://replicate.com/account/api-tokens"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary underline"
-          >
-            replicate.com/account/api-tokens
-          </a>
+          Get your Worker URL after deploying. Format: https://pixel-crafter-worker.&lt;your-subdomain&gt;.workers.dev
         </p>
       </div>
       <input
-        type="password"
-        value={token}
-        onChange={e => setToken(e.target.value)}
-        placeholder="r8_..."
+        type="url"
+        value={url}
+        onChange={e => setUrl(e.target.value)}
+        placeholder="https://pixel-crafter-worker.xxx.workers.dev"
         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
       />
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={!token.trim()}>
-          Save Token
+        <Button type="submit" size="sm" disabled={!url.trim()}>
+          Save
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
           Cancel
