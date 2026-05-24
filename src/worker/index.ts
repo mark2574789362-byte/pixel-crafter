@@ -2,6 +2,62 @@ const REPLICATE_API_BASE = 'https://api.replicate.com'
 
 export interface Env {
   REPLICATE_KEY?: string
+  STYLE_PALETTE_LOCK?: string // 'true' to enable palette lock
+}
+
+// Style Palette Definitions
+const STYLE_PALETTES: Record<string, string[]> = {
+  'pixel-fantasy': ['#4a90d9', '#2d5a87', '#f4d03f', '#e74c3c', '#27ae60', '#9b59b6'],
+  'dark-dungeon': ['#1a1a2e', '#16213e', '#0f3460', '#e94560', '#533483', '#94a3b8'],
+  'neon-cyberpunk': ['#0ff', '#ff00ff', '#00ff00', '#ff6600', '#0000ff', '#ffff00'],
+  'anime-rpg': ['#ff6b9d', '#c059cb', '#4ecdc4', '#ffe66d', '#6c5ce7', '#fd79a8'],
+  'retro-8bit': ['#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00'],
+}
+
+// Asset Type Prompt Templates
+const ASSET_CONTEXT: Record<string, { prefix: string; actions: string[] }> = {
+  character: {
+    prefix: 'player character, hero, adventurer',
+    actions: [
+      'standing idle pose, front view',
+      'attack pose, weapon ready',
+      'death animation, fallen pose',
+    ],
+  },
+  enemy: {
+    prefix: 'enemy monster creature, hostile, roguelike',
+    actions: [
+      'idle animation, breathing, front view',
+      'attack animation, striking pose',
+      'death animation, defeat pose',
+    ],
+  },
+  tileset: {
+    prefix: 'game tile, dungeon terrain',
+    actions: [
+      'floor tile, walkable',
+      'wall tile, solid',
+      'object tile, decoration',
+    ],
+  },
+  npc: {
+    prefix: 'NPC villager, friendly character',
+    actions: ['idle, standing', 'talk gesture', 'idle walking'],
+  },
+}
+
+type FrameType = 'idle' | 'attack' | 'death'
+
+interface RequestBody {
+  style: string
+  assetType: string
+  characterName: string
+  frameType?: FrameType
+  width?: number
+  height?: number
+  guidance_scale?: number
+  num_inference_steps?: number
+  seed?: number
 }
 
 interface ReplicatePrediction {
@@ -43,6 +99,38 @@ async function pollPrediction(predictionId: string, token: string): Promise<stri
   throw new Error('Prediction timed out')
 }
 
+function buildPrompt(body: RequestBody): { prompt: string; negative_prompt: string } {
+  const palette = STYLE_PALETTES[body.style]
+  const assetCtx = ASSET_CONTEXT[body.assetType]
+  const frameType: FrameType = body.frameType || 'idle'
+
+  if (!palette) {
+    throw new Error(`Unknown style: ${body.style}. Available: ${Object.keys(STYLE_PALETTES).join(', ')}`)
+  }
+
+  if (!assetCtx) {
+    throw new Error(`Unknown assetType: ${body.assetType}. Available: ${Object.keys(ASSET_CONTEXT).join(', ')}`)
+  }
+
+  // Map frameType to action index
+  const frameIndex = frameType === 'attack' ? 1 : frameType === 'death' ? 2 : 0
+  const action = assetCtx.actions[frameIndex]
+
+  // Build palette constraint string
+  const paletteStr = palette.map(c => c).join(', ')
+
+  // Construct prompt
+  const prompt = `${assetCtx.prefix}, ${body.characterName}, ${action}, use only these colors: ${paletteStr}, pixel art, 16-bit RPG style, crisp edges, clean sprite`
+
+  // Colors NOT in palette go to negative prompt
+  const allColors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff', '#000000']
+  const paletteSet = new Set(palette.map(c => c.toLowerCase()))
+  const forbiddenColors = allColors.filter(c => !paletteSet.has(c.toLowerCase()))
+  const negative_prompt = `avoid these colors: ${forbiddenColors.join(', ')}, watercolor, photograph, realistic, blurry, anti-aliased edges`
+
+  return { prompt, negative_prompt }
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === 'OPTIONS') {
@@ -68,7 +156,7 @@ export default {
       })
     }
 
-    let body: { prompt?: string; negative_prompt?: string; width?: number; height?: number; guidance_scale?: number; num_inference_steps?: number; seed?: number }
+    let body: RequestBody
     try {
       body = await request.json()
     } catch {
@@ -78,10 +166,21 @@ export default {
       })
     }
 
-    const { prompt, negative_prompt, width = 1024, height = 1024, guidance_scale = 7.5, num_inference_steps = 30, seed } = body
+    const { style, assetType, characterName, frameType, width = 1024, height = 1024, guidance_scale = 7.5, num_inference_steps = 30, seed } = body
 
-    if (!prompt) {
-      return new Response(JSON.stringify({ error: 'prompt is required' }), {
+    if (!style || !assetType || !characterName) {
+      return new Response(JSON.stringify({ error: 'style, assetType, and characterName are required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    let prompt: string
+    let negative_prompt: string
+    try {
+      ({ prompt, negative_prompt } = buildPrompt(body))
+    } catch (err) {
+      return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'Prompt building failed' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       })
@@ -97,7 +196,7 @@ export default {
         version: 'da77bc8f9041c6709f4c94be22e1b47229c4c2f5eb04604c47b3cd9e4b4ad6e',
         input: {
           prompt,
-          negative_prompt: negative_prompt || '',
+          negative_prompt,
           width,
           height,
           guidance_scale,
@@ -119,7 +218,7 @@ export default {
 
     if (prediction.status === 'succeeded') {
       const result = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output
-      return new Response(JSON.stringify({ imageUrl: result }), {
+      return new Response(JSON.stringify({ imageUrl: result, prompt, negative_prompt }), {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
@@ -136,7 +235,7 @@ export default {
 
     try {
       const imageUrl = await pollPrediction(prediction.id, token)
-      return new Response(JSON.stringify({ imageUrl }), {
+      return new Response(JSON.stringify({ imageUrl, prompt, negative_prompt }), {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
