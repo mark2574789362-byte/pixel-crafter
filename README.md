@@ -1,92 +1,138 @@
-# pixel-crafter
+# PixelCrafter — AI Pixel Asset Pipeline
 
-AI-powered 2D game asset pipeline for Roguelike pixel art generation.
+> Turn enemy names into game-ready sprite sheets. One input. Three frames. Ready for Unity.
 
-## Overview
+[![Deploy Status](https://github.com/mark2574789362-byte/pixel-crafter/actions/workflows/worker.yml/badge.svg)](https://github.com/mark2574789362-byte/pixel-crafter/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-PixelCrafter is a web-based tool that helps 2D game developers (particularly Roguelike and indie game creators) generate consistent, high-quality pixel art assets using AI. The tool outputs game-ready assets compatible with Unity, Godot, and other mainstream 2D game engines.
+## 🎮 What It Does
 
-## Target Users
+PixelCrafter generates **consistent pixel art sprite sheets** for Roguelike games — from a single enemy name to a production-ready asset in seconds.
 
-- **Indie game developers** working on 2D Roguelike games
-- **Small studios** needing bulk pixel art assets
-- **Solo creators** who want to produce game assets without pixel art skills
+```
+Skeleton Warrior → [idle] [attack] [death] → spritesheet.png + unity-meta.json
+```
 
-## Core Problem
+## 🔥 Features
 
-- Hiring pixel artists is expensive ($50-200/hour)
-- Style inconsistency when sourcing assets from multiple places
-- Time-consuming sprite sheet creation and engine import
+### Style Palette Lock
+Each style has a **locked color palette** (6 colors). Generated assets are constrained to the style palette, ensuring visual consistency across all characters in your game.
 
-## Core Features
+### Multi-Frame Generation
+One enemy name → three animation frames:
+- **Idle** — breathing, alert stance
+- **Attack** — strike/cast pose
+- **Death** — defeat animation
 
-- [ ] Style-locked generation (maintain visual consistency across all assets)
-- [ ] Multiple asset type support: characters, enemies, tilesets, UI, props, NPCs
-- [ ] Sprite sheet auto-generation
-- [ ] One-click export to Unity/Godot compatible formats
-- [ ] Generation history and parameter memory
+### Sprite Sheet Export
+Automatic horizontal Sprite Sheet assembly. Download as PNG + JSON metadata for Unity/Godot import.
 
-## Tech Stack
+### Style Presets
+- 🎨 **Pixel Fantasy** — Vibrant 16-bit JRPG
+- 🏴 **Dark Dungeon** — Moody torchlit dungeon
+- 🌃 **Neon Cyberpunk** — Glowing retrowave city
+- 🎌 **Anime RPG** — Pastel JRPG aesthetic
+- 👾 **Retro 8-bit** — Authentic NES palette
+
+## 📐 Architecture
+
+```
+User Input: "Skeleton Warrior"
+    ↓
+Prompt Engineering Pipeline
+  - Style Palette Lock (6-color constraint)
+  - Asset Type Context (enemy template)
+  - Frame Action Template (idle/attack/death)
+  - Seed Tracking (reproducibility)
+    ↓
+Cloudflare Worker (API Proxy)
+  - Bypasses CORS
+  - Manages Replicate API
+  - Handles async prediction polling
+    ↓
+Stability AI SDXL (via Replicate)
+    ↓
+Sprite Sheet Assembly (Canvas API)
+    ↓
+PNG + JSON Export
+```
+
+## 🛠 Tech Stack
 
 - **Frontend**: Vite + React 19 + TypeScript + Tailwind CSS 4
-- **AI Generation**: Stable Diffusion via Replicate API
-- **Image Processing**: rembg (background removal)
 - **Animation**: Framer Motion
+- **API Proxy**: Cloudflare Worker (edge-deployed)
+- **Image Gen**: Stability AI SDXL via Replicate
+- **Deployment**: GitHub Actions → Cloudflare Pages + Workers
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 pixel-crafter/
 ├── src/
-│   ├── components/     # UI components
-│   ├── hooks/          # React hooks
-│   ├── types/          # TypeScript type definitions
-│   ├── lib/            # Utility functions
-│   └── pages/          # Page components
-├── docs/               # Documentation
-└── public/             # Static assets
+│   ├── App.tsx              # Main app UI
+│   ├── components/ui/      # Shadcn/ui components
+│   ├── lib/
+│   │   ├── promptBuilder.ts # Prompt engineering + style palettes
+│   │   └── spriteSheetExporter.ts # Canvas-based sprite sheet assembly
+│   ├── worker/
+│   │   └── index.ts         # Cloudflare Worker proxy
+│   └── types/
+│       └── index.ts         # TypeScript types
+├── wrangler.toml           # Cloudflare Worker config
+└── .github/workflows/
+    └── worker.yml          # Auto-deploy Worker
 ```
 
-## Getting Started
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 20+
+- Replicate account + API token
+- Cloudflare account (free tier works)
+
+### Local Development
 
 ```bash
-# Install dependencies
+git clone https://github.com/mark2574789362-byte/pixel-crafter
+cd pixel-crafter
 npm install
-
-# Start development server
 npm run dev
-
-# Build for production
-npm run build
 ```
 
-## Dependencies
+### Environment Setup
 
-### Core Dependencies
-- [React](https://react.dev/) - UI framework
-- [Tailwind CSS](https://tailwindcss.com/) - Styling
-- [Framer Motion](https://www.framer.com/motion/) - Animations
-- [Lucide](https://lucide.dev/) - Icons
-- [Replicate](https://replicate.com/) - AI image generation API (SDXL model)
+1. Get Replicate API token: [replicate.com/account/api-tokens](https://replicate.com/account/api-tokens)
+2. Get Cloudflare API token: [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens)
+3. Add secrets to GitHub repo:
+   - `REPLICATE_API_TOKEN` — Replicate API key
+   - `CLOUDFLARE_API_TOKEN` — Cloudflare Workers edit permission
 
-### UI Utilities
-- [clsx](https://github.com/lukeed/clsx) - Conditional className utility
-- [tailwind-merge](https://github.com/RickCochrane/tailwind-merge) - Tailwind class merging
-- [class-variance-authority](https://github.com/joeatt/cva) - Component variant styles
+### Deployment
 
-### Build Tools
-- [@tailwindcss/vite](https://tailwindcss.com/) - Tailwind Vite plugin
-- [@types/node](https://www.npmjs.com/package/@types/node) - TypeScript type definitions
+Push to `main` branch — GitHub Actions auto-deploys:
+- Frontend → Cloudflare Pages
+- Worker → Cloudflare Workers
 
-### Component Library
-- shadcn/ui (Button, Card components) - Implementation follows [shadcn/ui patterns](https://ui.shadcn.com/). Original design and implementation is custom for this project.
+## 📊 Current Status
 
-> **Note**: Button and Card components are custom implementations following shadcn/ui design guidelines. They are not installed as an npm package — source code is in `src/components/ui/`.
+| Feature | Status |
+|---------|--------|
+| Style Palette Lock | ✅ Implemented |
+| Multi-Frame Generation | ✅ Implemented |
+| Sprite Sheet Export | ✅ Implemented |
+| Cloudflare Worker Proxy | ✅ Deployed |
+| Seed Tracking | 🔜 Next |
+| Unity/Godot Meta Export | 🔜 Next |
 
-## License
+## 🎯 Roadmap
+
+- [ ] Seed tracking + history
+- [ ] Reference image upload (style consistency)
+- [ ] LoRA fine-tuning integration
+- [ ] Unity/Godot one-click import meta files
+- [ ] Batch generation (full enemy roster)
+
+## 📝 License
 
 MIT
-
-## Author
-
-mark2574789362-byte
