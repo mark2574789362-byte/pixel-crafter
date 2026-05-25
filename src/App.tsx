@@ -15,7 +15,7 @@ const STYLE_PRESETS: Record<PixelStyle, { name: string }> = {
   'neon-cyberpunk': { name: 'Neon Cyberpunk' },
   'anime-rpg': { name: 'Anime RPG' },
   'retro-8bit': { name: 'Retro 8-bit' },
-}
+} 
 
 const FRAME_TYPES = ['idle', 'attack', 'death'] as const
 const FRAME_LABELS: Record<string, string> = {
