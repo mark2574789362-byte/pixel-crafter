@@ -5,26 +5,62 @@
 [![Deploy Status](https://github.com/mark2574789362-byte/pixel-crafter/actions/workflows/worker.yml/badge.svg)](https://github.com/mark2574789362-byte/pixel-crafter/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+---
+
 ## 🎮 What It Does
 
 PixelCrafter generates **consistent pixel art sprite sheets** for Roguelike games — from a single enemy name to a production-ready asset in seconds.
 
 ```
-Skeleton Warrior → [idle] [attack] [death] → spritesheet.png + unity-meta.json
+Skeleton Warrior → [idle] [attack] [death] → spritesheet.png + metadata.json
 ```
+
+---
+
+## 🎨 Generated Assets
+
+### Case 1 — Skeleton Archer (Pixel Fantasy style)
+
+**Palette**: `#4a90d9 #2d5a87 #f4d03f #e74c3c #27ae60 #9b59b6`
+
+| idle | attack | death |
+|------|--------|-------|
+| ![idle](generated-assets/skeleton-archer/idle.png) | ![attack](generated-assets/skeleton-archer/attack.png) | ![death](generated-assets/skeleton-archer/death.png) |
+
+---
+
+### Case 2 — Poison Slime (Neon Cyberpunk style)
+
+**Palette**: `#0ff #ff00ff #00ff00 #ff6600 #0000ff #ffff00`
+
+| idle | attack | death |
+|------|--------|-------|
+| ![idle](generated-assets/poison-slime/idle.png) | ![attack](generated-assets/poison-slime/attack.png) | ![death](generated-assets/poison-slime/death.png) |
+
+---
+
+### Case 3 — Dark Mage (Dark Dungeon style)
+
+**Palette**: `#1a1a2e #16213e #0f3460 #e94560 #533483 #94a3b8`
+
+| idle | attack | death |
+|------|--------|-------|
+| ![idle](generated-assets/dark-mage/idle.png) | ![attack](generated-assets/dark-mage/attack.png) | ![death](generated-assets/dark-mage/death.png) |
+
+---
 
 ## 🔥 Features
 
-### Style Palette Lock
-Each style has a **locked color palette** (6 colors). Generated assets are constrained to the style palette, ensuring visual consistency across all characters in your game.
+### Style Palette Lock ✅
+Each style has a **locked 6-color palette**. Assets are constrained to the palette — visual consistency across all characters in your game.
 
-### Multi-Frame Generation
+### Multi-Frame Generation ✅
 One enemy name → three animation frames:
 - **Idle** — breathing, alert stance
 - **Attack** — strike/cast pose
 - **Death** — defeat animation
 
-### Sprite Sheet Export
+### Sprite Sheet Export ✅
 Automatic horizontal Sprite Sheet assembly. Download as PNG + JSON metadata for Unity/Godot import.
 
 ### Style Presets
@@ -33,6 +69,8 @@ Automatic horizontal Sprite Sheet assembly. Download as PNG + JSON metadata for 
 - 🌃 **Neon Cyberpunk** — Glowing retrowave city
 - 🎌 **Anime RPG** — Pastel JRPG aesthetic
 - 👾 **Retro 8-bit** — Authentic NES palette
+
+---
 
 ## 📐 Architecture
 
@@ -43,7 +81,6 @@ Prompt Engineering Pipeline
   - Style Palette Lock (6-color constraint)
   - Asset Type Context (enemy template)
   - Frame Action Template (idle/attack/death)
-  - Seed Tracking (reproducibility)
     ↓
 Cloudflare Worker (API Proxy)
   - Bypasses CORS
@@ -57,13 +94,7 @@ Sprite Sheet Assembly (Canvas API)
 PNG + JSON Export
 ```
 
-## 🛠 Tech Stack
-
-- **Frontend**: Vite + React 19 + TypeScript + Tailwind CSS 4
-- **Animation**: Framer Motion
-- **API Proxy**: Cloudflare Worker (edge-deployed)
-- **Image Gen**: Stability AI SDXL via Replicate
-- **Deployment**: GitHub Actions → Cloudflare Pages + Workers
+---
 
 ## 📁 Project Structure
 
@@ -74,24 +105,20 @@ pixel-crafter/
 │   ├── components/ui/      # Shadcn/ui components
 │   ├── lib/
 │   │   ├── promptBuilder.ts # Prompt engineering + style palettes
-│   │   └── spriteSheetExporter.ts # Canvas-based sprite sheet assembly
+│   │   └── spriteSheetExporter.ts
 │   ├── worker/
 │   │   └── index.ts         # Cloudflare Worker proxy
 │   └── types/
-│       └── index.ts         # TypeScript types
-├── wrangler.toml           # Cloudflare Worker config
+│       └── index.ts
+├── generated-assets/        # Sample outputs (README only)
+├── wrangler.toml
 └── .github/workflows/
-    └── worker.yml          # Auto-deploy Worker
+    └── worker.yml
 ```
 
+---
+
 ## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 20+
-- Replicate account + API token
-- Cloudflare account (free tier works)
-
-### Local Development
 
 ```bash
 git clone https://github.com/mark2574789362-byte/pixel-crafter
@@ -103,16 +130,16 @@ npm run dev
 ### Environment Setup
 
 1. Get Replicate API token: [replicate.com/account/api-tokens](https://replicate.com/account/api-tokens)
-2. Get Cloudflare API token: [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens)
-3. Add secrets to GitHub repo:
-   - `REPLICATE_API_TOKEN` — Replicate API key
-   - `CLOUDFLARE_API_TOKEN` — Cloudflare Workers edit permission
+2. Add `REPLICATE_API_TOKEN` to GitHub repo secrets
+3. Push to `main` — auto-deploys via GitHub Actions
 
 ### Deployment
 
-Push to `main` branch — GitHub Actions auto-deploys:
+Push to `main` → GitHub Actions auto-deploys:
 - Frontend → Cloudflare Pages
 - Worker → Cloudflare Workers
+
+---
 
 ## 📊 Current Status
 
@@ -122,16 +149,17 @@ Push to `main` branch — GitHub Actions auto-deploys:
 | Multi-Frame Generation | ✅ Implemented |
 | Sprite Sheet Export | ✅ Implemented |
 | Cloudflare Worker Proxy | ✅ Deployed |
-| Seed Tracking | 🔜 Next |
-| Unity/Godot Meta Export | 🔜 Next |
+| Generated Assets Demo | ✅ 3 cases documented |
 
-## 🎯 Roadmap
+---
 
-- [ ] Seed tracking + history
-- [ ] Reference image upload (style consistency)
-- [ ] LoRA fine-tuning integration
-- [ ] Unity/Godot one-click import meta files
-- [ ] Batch generation (full enemy roster)
+## ⚠️ Current Limitations
+
+- Animation consistency may be unstable across different poses
+- Complex or multi-character compositions may fail
+- .shop TLD not supported by Cloudflare Pages (use pages.dev subdomain)
+
+---
 
 ## 📝 License
 
