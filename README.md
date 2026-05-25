@@ -153,6 +153,19 @@ Push to `main` → GitHub Actions auto-deploys:
 
 ---
 
+## 🎯 Style Consistency Proof
+
+**Dark Dungeon palette** applied across 3 different enemy types — same 6 colors, unified look:
+
+| Necromancer | Skeleton Warrior | Flame Demon |
+|-------------|------------------|-------------|
+| ![necro](generated-assets/dark-dungeon-consistency/necro-idle.png) | ![skeleton](generated-assets/dark-dungeon-consistency/skeleton-idle.png) | ![flame](generated-assets/dark-dungeon-consistency/flame-demon-idle.png) |
+
+Same palette, different character designs — **Style Lock works**.
+
+
+---
+
 ## ⚠️ Current Limitations
 
 - Animation consistency may be unstable across different poses
