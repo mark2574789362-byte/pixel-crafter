@@ -19,6 +19,8 @@ Skeleton Warrior → [idle] [attack] [death] → spritesheet.png + metadata.json
 
 ## 🎨 Generated Assets
 
+Real outputs — click any image to see full size.
+
 ### Case 1 — Skeleton Archer (Pixel Fantasy style)
 
 **Palette**: `#4a90d9 #2d5a87 #f4d03f #e74c3c #27ae60 #9b59b6`
@@ -51,16 +53,16 @@ Skeleton Warrior → [idle] [attack] [death] → spritesheet.png + metadata.json
 
 ## 🔥 Features
 
-### Style Palette Lock ✅
-Each style has a **locked 6-color palette**. Assets are constrained to the palette — visual consistency across all characters in your game.
+### Style Palette Lock
+Each style has a **locked 6-color palette** (6 colors). Generated assets are constrained to the style palette, ensuring visual consistency across all characters in your game.
 
-### Multi-Frame Generation ✅
+### Multi-Frame Generation
 One enemy name → three animation frames:
 - **Idle** — breathing, alert stance
 - **Attack** — strike/cast pose
 - **Death** — defeat animation
 
-### Sprite Sheet Export ✅
+### Sprite Sheet Export
 Automatic horizontal Sprite Sheet assembly. Download as PNG + JSON metadata for Unity/Godot import.
 
 ### Style Presets
@@ -81,6 +83,7 @@ Prompt Engineering Pipeline
   - Style Palette Lock (6-color constraint)
   - Asset Type Context (enemy template)
   - Frame Action Template (idle/attack/death)
+  - Seed Tracking (reproducibility)
     ↓
 Cloudflare Worker (API Proxy)
   - Bypasses CORS
@@ -96,6 +99,16 @@ PNG + JSON Export
 
 ---
 
+## 🛠 Tech Stack
+
+- **Frontend**: Vite + React 19 + TypeScript + Tailwind CSS 4
+- **Animation**: Framer Motion
+- **API Proxy**: Cloudflare Worker (edge-deployed)
+- **Image Gen**: Stability AI SDXL via Replicate
+- **Deployment**: GitHub Actions → Cloudflare Pages + Workers
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -105,20 +118,27 @@ pixel-crafter/
 │   ├── components/ui/      # Shadcn/ui components
 │   ├── lib/
 │   │   ├── promptBuilder.ts # Prompt engineering + style palettes
-│   │   └── spriteSheetExporter.ts
+│   │   └── spriteSheetExporter.ts # Canvas-based sprite sheet assembly
 │   ├── worker/
 │   │   └── index.ts         # Cloudflare Worker proxy
 │   └── types/
-│       └── index.ts
+│       └── index.ts         # TypeScript types
 ├── generated-assets/        # Sample outputs (README only)
-├── wrangler.toml
+├── wrangler.toml           # Cloudflare Worker config
 └── .github/workflows/
-    └── worker.yml
+    └── worker.yml          # Auto-deploy Worker
 ```
 
 ---
 
 ## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 20+
+- Replicate account + API token
+- Cloudflare account (free tier works)
+
+### Local Development
 
 ```bash
 git clone https://github.com/mark2574789362-byte/pixel-crafter
@@ -130,12 +150,14 @@ npm run dev
 ### Environment Setup
 
 1. Get Replicate API token: [replicate.com/account/api-tokens](https://replicate.com/account/api-tokens)
-2. Add `REPLICATE_API_TOKEN` to GitHub repo secrets
-3. Push to `main` — auto-deploys via GitHub Actions
+2. Get Cloudflare API token: [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens)
+3. Add secrets to GitHub repo:
+   - `REPLICATE_API_TOKEN` — Replicate API key
+   - `CLOUDFLARE_API_TOKEN` — Cloudflare Workers edit permission
 
 ### Deployment
 
-Push to `main` → GitHub Actions auto-deploys:
+Push to `main` branch — GitHub Actions auto-deploys:
 - Frontend → Cloudflare Pages
 - Worker → Cloudflare Workers
 
@@ -150,12 +172,13 @@ Push to `main` → GitHub Actions auto-deploys:
 | Sprite Sheet Export | ✅ Implemented |
 | Cloudflare Worker Proxy | ✅ Deployed |
 | Generated Assets Demo | ✅ 3 cases documented |
+| Style Consistency Proof | ✅ Documented |
 
 ---
 
 ## 🎯 Style Consistency Proof
 
-**Dark Dungeon palette** applied across 3 different enemy types — same 6 colors, unified look:
+**Dark Dungeon palette** applied across 3 different enemy types — same 6 colors, unified visual language:
 
 | Necromancer | Skeleton Warrior | Flame Demon |
 |-------------|------------------|-------------|
@@ -163,6 +186,15 @@ Push to `main` → GitHub Actions auto-deploys:
 
 Same palette, different character designs — **Style Lock works**.
 
+---
+
+## 🎯 Roadmap
+
+- [ ] Seed tracking + history
+- [ ] Reference image upload (style consistency)
+- [ ] LoRA fine-tuning integration
+- [ ] Unity/Godot one-click import meta files
+- [ ] Batch generation (full enemy roster)
 
 ---
 
