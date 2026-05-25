@@ -193,7 +193,7 @@ export default {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        version: 'da77bc8f9041c6709f4c94be22e1b47229c4c2f5eb04604c47b3cd9e4b4ad6e',
+        version: '7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc',
         input: {
           prompt,
           negative_prompt,

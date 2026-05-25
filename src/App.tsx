@@ -1,3 +1,4 @@
+// PixelCrafter — AI-powered pixel art sprite generator
 import { useState } from 'react'
 import { Sparkles, Download, History, Palette, AlertCircle, Globe, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'

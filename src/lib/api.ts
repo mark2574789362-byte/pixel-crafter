@@ -58,7 +58,7 @@ export async function generateAsset(
   const fullPrompt = `${styleConfig.prompt}, ${assetContext}, ${prompt}`.trim()
   const negativePrompt = `${styleConfig.negativePrompt}, watermark, signature, text overlay`
 
-  const model = 'stability-ai/sdxl:da77bc8f9041c6709f4c94be22e1b47229c4c2f5eb04604c47b3cd9e4b4ad6e'
+  const model = 'stability-ai/sdxl:7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc'
 
   const input: Record<string, unknown> = {
     prompt: fullPrompt,
