@@ -108,6 +108,26 @@ function App() {
     }
   }
 
+  const handleDownloadFrame = async (frameType: string) => {
+    const url = generatedFrames[frameType as keyof typeof generatedFrames]
+    if (!url) return
+    const filename = `${characterName.toLowerCase().replace(/\s+/g, '-')}-${frameType}.png`
+    try {
+      const response = await fetch(url)
+      const blob = await response.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Download failed')
+    }
+  }
+
   const hasAllFrames = FRAME_TYPES.every(ft => generatedFrames[ft])
 
   return (
@@ -308,17 +328,15 @@ function App() {
                         Export Sprite Sheet
                       </Button>
                       {FRAME_TYPES.map(ft => (
-                        <a
+                        <Button
                           key={ft}
-                          href={generatedFrames[ft]}
-                          download={`${characterName.toLowerCase().replace(/\s+/g, '-')}-${ft}.png`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3 text-xs"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownloadFrame(ft)}
                         >
                           <Download className="mr-1 h-3 w-3" />
                           {FRAME_LABELS[ft]}
-                        </a>
+                        </Button>
                       ))}
                     </div>
                   </div>
