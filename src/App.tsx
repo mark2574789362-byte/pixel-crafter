@@ -75,6 +75,10 @@ function App() {
         }
 
         allFrames[frameType] = data.imageUrl
+
+        if (frameType !== FRAME_TYPES[FRAME_TYPES.length - 1]) {
+          await new Promise(r => setTimeout(r, 10000))
+        }
       }
 
       setGeneratedFrames(allFrames)
