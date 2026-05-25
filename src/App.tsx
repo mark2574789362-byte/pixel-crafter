@@ -139,13 +139,15 @@ function App() {
             <span className="text-lg font-semibold">PixelCrafter</span>
           </div>
           <nav className="ml-auto flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => {}}>
+            <Button variant="ghost" size="sm" onClick={() => window.alert('Style Library — Coming Soon')}>
               <Palette className="mr-2 h-4 w-4" />
               Style Library
+              <span className="ml-1.5 rounded-full bg-primary/20 px-1.5 py-0.5 text-[10px] font-medium text-primary">Soon</span>
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => {}}>
+            <Button variant="ghost" size="sm" onClick={() => window.alert('History — Coming Soon')}>
               <History className="mr-2 h-4 w-4" />
               History
+              <span className="ml-1.5 rounded-full bg-primary/20 px-1.5 py-0.5 text-[10px] font-medium text-primary">Soon</span>
             </Button>
             <Button variant="ghost" size="sm" onClick={handleExportSpriteSheet} disabled={!hasAllFrames}>
               <Download className="mr-2 h-4 w-4" />
