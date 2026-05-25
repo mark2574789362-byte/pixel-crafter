@@ -202,7 +202,6 @@ Same palette, different character designs — **Style Lock works**.
 
 - Animation consistency may be unstable across different poses
 - Complex or multi-character compositions may fail
-- .shop TLD not supported by Cloudflare Pages (use pages.dev subdomain)
 
 ---
 
