@@ -5,6 +5,9 @@
 [![Deploy Status](https://github.com/mark2574789362-byte/pixel-crafter/actions/workflows/worker.yml/badge.svg)](https://github.com/mark2574789362-byte/pixel-crafter/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+📹 **Demo Video**: [Baidu Netdisk](https://pan.baidu.com/s/1iUgvHxwUkY_Rbx3qmJIo2w?pwd=yyru) (提取码: yyru)
+
+
 ---
 
 ## 🎮 What It Does
