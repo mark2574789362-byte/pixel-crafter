@@ -298,7 +298,7 @@ function App() {
                         </div>
                       ))}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <Button
                         onClick={handleExportSpriteSheet}
                         className="flex-1"
@@ -307,16 +307,19 @@ function App() {
                         <Layers className="mr-2 h-4 w-4" />
                         Export Sprite Sheet
                       </Button>
-                      <a
-                        href={generatedFrames.idle}
-                        download={`${characterName.toLowerCase().replace(/\s+/g, '-')}-idle.png`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3 text-xs"
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Download PNG
-                      </a>
+                      {FRAME_TYPES.map(ft => (
+                        <a
+                          key={ft}
+                          href={generatedFrames[ft]}
+                          download={`${characterName.toLowerCase().replace(/\s+/g, '-')}-${ft}.png`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3 text-xs"
+                        >
+                          <Download className="mr-1 h-3 w-3" />
+                          {FRAME_LABELS[ft]}
+                        </a>
+                      ))}
                     </div>
                   </div>
                 ) : isGenerating ? (
