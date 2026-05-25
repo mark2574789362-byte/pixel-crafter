@@ -148,7 +148,7 @@ export default {
       return new Response('Only POST allowed', { status: 405 })
     }
 
-    const token = env.REPLICATE_KEY ||
+    const token = env.REPLICATE_KEY || ''
     if (!token) {
       return new Response(JSON.stringify({ error: 'REPLICATE_KEY not configured' }), {
         status: 500,
