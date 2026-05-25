@@ -50,9 +50,9 @@ function App() {
     setError(null)
     setGeneratedFrames({})
 
-    try {
-      const frames: Record<string, string> = {}
+    const allFrames: Record<string, string> = {}
 
+    try {
       for (const frameType of FRAME_TYPES) {
         setCurrentFrame(frameType)
 
@@ -73,11 +73,10 @@ function App() {
           throw new Error(data.error || `Generation failed for ${frameType}`)
         }
 
-        frames[frameType] = data.imageUrl
-        setGeneratedFrames({ ...frames })
+        allFrames[frameType] = data.imageUrl
       }
 
-      setCurrentFrame('')
+      setGeneratedFrames(allFrames)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Generation failed')
     } finally {

@@ -148,11 +148,11 @@ export default {
       return new Response('Only POST allowed', { status: 405 })
     }
 
-    const token = env.REPLICATE_KEY || ''
+    const token = env.REPLICATE_KEY ||
     if (!token) {
       return new Response(JSON.stringify({ error: 'REPLICATE_KEY not configured' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       })
     }
 
@@ -162,7 +162,7 @@ export default {
     } catch {
       return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       })
     }
 
@@ -171,7 +171,7 @@ export default {
     if (!style || !assetType || !characterName) {
       return new Response(JSON.stringify({ error: 'style, assetType, and characterName are required' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       })
     }
 
@@ -182,7 +182,7 @@ export default {
     } catch (err) {
       return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'Prompt building failed' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       })
     }
 
@@ -210,7 +210,7 @@ export default {
       const err = await createResponse.text()
       return new Response(JSON.stringify({ error: `Replicate error: ${createResponse.status}`, details: err }), {
         status: 502,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       })
     }
 
@@ -229,7 +229,7 @@ export default {
     if (prediction.status === 'failed' || prediction.status === 'canceled') {
       return new Response(JSON.stringify({ error: prediction.error || 'Prediction failed' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       })
     }
 
@@ -244,7 +244,7 @@ export default {
     } catch (err) {
       return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'Polling failed' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       })
     }
   },
